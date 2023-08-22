@@ -1,5 +1,6 @@
 import click
 import pytest
+
 from click_type_test import BadAnnotationError, check_param_annotations
 
 
