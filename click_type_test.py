@@ -14,8 +14,6 @@ import uuid
 
 import click
 
-__version__ = "0.0.1"
-
 
 @t.runtime_checkable
 class AnnotatedParamType(t.Protocol):
