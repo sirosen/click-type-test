@@ -109,17 +109,17 @@ def _type_from_param_type(
     if type(param_type) in _CLICK_STATIC_TYPE_MAP:
         return _CLICK_STATIC_TYPE_MAP[type(param_type)]
     if isinstance(param_type, click.Choice):
-        return t.Literal[tuple(param_type.choices)]
+        return t.Literal[tuple(param_type.choices)]  # type: ignore[misc, return-value]
     if isinstance(param_type, click.Tuple):
-        return tuple[
+        return tuple[  # type: ignore[misc]
             tuple(
                 _type_from_param_type(param_obj, param_type=p) for p in param_type.types
             )
         ]
     if isinstance(param_type, click.Path):
-        if param_type.path_type is not None:
-            if isinstance(param_obj.path_type, type):
-                return param_obj.path_type
+        if param_type.type is not None:
+            if isinstance(param_obj.type, type):
+                return param_obj.type
             else:
                 raise NotImplementedError(
                     "todo: support the return type of a converter func"
@@ -177,7 +177,9 @@ def deduce_type_from_parameter(param: click.Parameter) -> type:
     # if a parameter has `multiple=True` or `nargs=-1`, then the type which can be
     # deduced from the parameter should be exposed as an any-length tuple
     if _is_multi_param(param):
-        param_type = tuple[_type_from_param_type(param), ...]
+        param_type = tuple[  # type: ignore[misc, valid-type]
+            _type_from_param_type(param), ...
+        ]
         possible_types.add(param_type)
     # if not multiple, then the type may need to be unioned with `None`
     # but if the type is, itself, a union, then it will need to be unpacked
@@ -201,7 +203,7 @@ def deduce_type_from_parameter(param: click.Parameter) -> type:
         return possible_types.pop()
 
     # more than one type: a union of the elements
-    return t.Union[tuple(possible_types)]
+    return t.Union[tuple(possible_types)]  # type: ignore[return-value]
 
 
 _KNOWN_TYPE_NAMES = {}
