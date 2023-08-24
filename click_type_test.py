@@ -206,11 +206,11 @@ def deduce_type_from_parameter(param: click.Parameter) -> type:
     return t.Union[tuple(possible_types)]  # type: ignore[return-value]
 
 
-_KNOWN_TYPE_NAMES = {}
+class TypeNameRegistry(dict[type, str]):
+    pass
 
 
-def register_type_name(name: str, typ: type) -> None:
-    _KNOWN_TYPE_NAMES[typ] = name
+KNOWN_TYPE_NAMES = TypeNameRegistry()
 
 
 def check_param_annotations(f: click.Command) -> bool:
@@ -228,10 +228,7 @@ def check_param_annotations(f: click.Command) -> bool:
         annotated_param_type = hints[param.name]
 
         if annotated_param_type != expected_type:
-            if expected_type in _KNOWN_TYPE_NAMES:
-                expected_type_name = _KNOWN_TYPE_NAMES[expected_type]
-            else:
-                expected_type_name = str(expected_type)
+            expected_type_name = KNOWN_TYPE_NAMES.get(expected_type, str(expected_type))
             errors.append(
                 f"parameter '{param.name}' has unexpected parameter type "
                 f"'{annotated_param_type}' rather than '{expected_type_name}'"
