@@ -35,33 +35,6 @@ class AnnotatedOption(t.Protocol):
         ...
 
 
-class _SENTINEL:
-    """Internal sentinel class."""
-
-
-class ExplicitlyAnnotatedOption(click.Option):
-    def __init__(
-        self,
-        *args: t.Any,
-        type_annotation: type = _SENTINEL,
-        **kwargs: t.Any,
-    ) -> None:
-        super().__init__(*args, **kwargs)
-        self._type_annotation = type_annotation
-
-    def has_explicit_annotation(self) -> bool:
-        if self._type_annotation == _SENTINEL:
-            return False
-        return True
-
-    @property
-    def type_annotation(self) -> type:
-        if self._type_annotation == _SENTINEL:
-            raise ValueError("cannot get annotation from option when it is not set")
-
-        return t.cast(type, self._type_annotation)
-
-
 class BadAnnotationError(ValueError):
     def __init__(self, errors: list[str]) -> None:
         self.errors = errors
@@ -214,6 +187,45 @@ KNOWN_TYPE_NAMES = TypeNameRegistry()
 
 
 def check_param_annotations(f: click.Command) -> bool:
+    """
+    Check that the type annotations on a command's parameters match the types and
+    modes of the click options used.
+
+    For example, the following command would pass the check:
+
+    .. code-block:: python
+
+        @click.command
+        @click.argument('FOO')
+        @click.option('--bar', type=int)
+        @click.option('--baz', type=click.Choice(("a", "b")))
+        def goodcmd(*, foo: str, bar: int | None, baz: typing.Literal["a", "b"] | None):
+            ...
+
+    while this command would fail:
+
+    .. code-block:: python
+
+        @click.command
+        @click.argument('--foo')
+        @click.option('--bar', type=click.Choice(("x", "y")))
+        def badcmd(*, foo: str, bar: str | None):
+            ...
+
+    ``badcmd`` does not match the type of ``foo`` (``str | None``) or the type of
+    ``bar`` (``str`` where a ``Literal`` should be used).
+
+    Parameters other than the ones described by the ``click`` parameters are allowed and
+    ignored. For example, this usage is considered valid:
+
+    .. code-block:: python
+
+        @click.command
+        @click.argument('FOO')
+        @my_pass_username_decorator
+        def goodcmd(*, foo: str, username: str):
+            ...
+    """
     hints = t.get_type_hints(f.callback)
     errors = []
     for param in f.params:
