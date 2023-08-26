@@ -46,3 +46,7 @@ exclude_lines = [
     # type-checking overloads
     "@t.overload"
 ]
+[tool.isort]
+profile = "black"
+[tool.mypy]
+strict = true

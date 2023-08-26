@@ -84,39 +84,6 @@ The path you take will depend a bit on the precise needs of your CLI, but it
 generally should be possible to tune `click-type-test` to correctly understand
 your CLI.
 
-#### ExplicitlyAnnotatedOption
-
-However, the simplest way to use `AnnotatedOption` is to use the
-`ExplicitlyAnnotatedOption` class, which takes an extra init parameter,
-`type_annotation`, like so:
-
-```python
-import typing
-import click
-from click_type_test import ExplicitlyAnnotatedOption
-
-def _str_to_bool_callback(
-    ctx: click.Context, param: click.Parameter, value: typing.Any
-) -> bool | None:
-    if value is None:
-        return None
-    return value.lower() in ("yes", "true", "on", "1")
-
-@click.command
-@click.option(
-    "--bar",
-    callback=_str_to_bool_callback,
-    cls=ExplicitlyAnnotatedOption,
-    type_annotation=bool,
-)
-def foo(*, bar: bool | None) -> None:
-    ...
-```
-
-Note how `type_annotation` is used to override the normal deduction that
-`--bar` is a string, but the default for `--bar` is still understood to be
-`None`!
-
 #### AnnotatedParamType
 
 If you have a custom `ParamType`, extend it like so and it will have
@@ -126,15 +93,35 @@ first-class support in `click-type-test`:
 # TODO!
 ```
 
-#### AnnotatedOption
+#### AnnotatedParameter
 
-If you have a custom subclass of `Option` already, you won't be able to use
-`cls=ExplicitlyAnnotatedOption`. To handle this case, just have your subclass
-of `Option` implement the same `AnnotatedOption` protocol, like so:
+If you have a subclass of `Option` or `Argument` which produces specialized
+values, it may be necessary to provide type information from that class.
+To handle this case, just have your parameter class implement the
+`AnnotatedParameter` protocol, like so:
 
 ```python
 # TODO!
 ```
+
+## API
+
+The following values are the consumable API for `click-type-test`.
+No other values are part of the interface.
+
+- `AnnotatedParamType`: a protocol for `click.ParamType` subclasses which
+  provide explicit type information.
+
+- `AnnotatedParameter`: a protocol for `click.Parameter` subclasses which
+  provide explicit type information.
+
+- `deduce_type_from_parameter`: a function which takes a `click.Parameter` and
+  returns a type. Used internally but useful for unit testing custom classes.
+
+- `check_param_annotations`: a function which takes a `click.Command` and
+  checks the type annotations on its callback against its parameter list.
+
+- `BadAnnotationError`: the error type raised if checking annotations fails.
 
 ## License
 

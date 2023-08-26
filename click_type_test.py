@@ -24,7 +24,7 @@ class AnnotatedParamType(t.Protocol):
 
 
 @t.runtime_checkable
-class AnnotatedOption(t.Protocol):
+class AnnotatedParameter(t.Protocol):
     # conventionally this protocol describes subclasses of click.Option
     # however, the type itself does not enforce this
     def has_explicit_annotation(self) -> bool:
@@ -82,9 +82,9 @@ def _type_from_param_type(
     if type(param_type) in _CLICK_STATIC_TYPE_MAP:
         return _CLICK_STATIC_TYPE_MAP[type(param_type)]
     if isinstance(param_type, click.Choice):
-        return t.Literal[tuple(param_type.choices)]  # type: ignore[misc, return-value]
+        return t.Literal[tuple(param_type.choices)]  # type: ignore[return-value]
     if isinstance(param_type, click.Tuple):
-        return tuple[  # type: ignore[misc]
+        return tuple[  # type: ignore[misc, no-any-return]
             tuple(
                 _type_from_param_type(param_obj, param_type=p) for p in param_type.types
             )
@@ -131,7 +131,7 @@ def deduce_type_from_parameter(param: click.Parameter) -> type:
     Convert a click.Parameter object to a type or union of types
     """
     # if there is an explicit annotation, use that
-    if isinstance(param, AnnotatedOption) and param.has_explicit_annotation():
+    if isinstance(param, AnnotatedParameter) and param.has_explicit_annotation():
         return param.type_annotation
 
     possible_types = set()
