@@ -150,7 +150,7 @@ def deduce_type_from_parameter(param: click.Parameter) -> type:
     if isinstance(param, AnnotatedParameter) and param.has_explicit_annotation():
         return param.type_annotation
 
-    possible_types = set()
+    possible_types: set[type | None] = set()
 
     # only implicitly add NoneType to the types if the default is None
     # some possible cases to consider:
@@ -196,20 +196,52 @@ def deduce_type_from_parameter(param: click.Parameter) -> type:
 
     # exactly one type: not a union, so unpack the only element
     if len(possible_types) == 1:
-        return possible_types.pop()
+        val = possible_types.pop()
+        assert val is not None
+        return val
 
     # more than one type: a union of the elements
     return t.Union[tuple(possible_types)]  # type: ignore[return-value]
 
 
-class TypeNameRegistry(dict[type, str]):
-    pass
+class _TypeNameMap:
+    def __init__(self, data: dict[type, str]) -> None:
+        self._data: dict[type, str] = {}
+        for k, v in data.items():
+            self[k] = v
+
+    def _normkey(self, key: type) -> type:
+        if isinstance(key, types.UnionType):
+            return t.Union[tuple(t.get_args(key))]  # type: ignore[return-value]
+        return key
+
+    def __setitem__(self, key: type, value: str) -> None:
+        self._data[self._normkey(key)] = value
+
+    def __getitem__(self, key: type) -> str:
+        return self._data[self._normkey(key)]
+
+    def __contains__(self, key: type) -> bool:
+        return self._normkey(key) in self._data
+
+    def get_type_name(self, typ: t.Any) -> str:
+        if typ in self:
+            return self[typ]
+
+        if isinstance(typ, types.UnionType) or t.get_origin(typ) == t.Union:
+            return " | ".join(self.get_type_name(x) for x in t.get_args(typ))
+
+        if isinstance(typ, type):
+            if typ == (None.__class__):
+                return "None"
+            return typ.__name__
+
+        return str(typ)
 
 
-KNOWN_TYPE_NAMES = TypeNameRegistry()
-
-
-def check_param_annotations(f: click.Command) -> bool:
+def check_param_annotations(
+    f: click.Command, *, known_type_names: dict[type, str] | None = None
+) -> bool:
     """
     Check that the type annotations on a command's parameters match the types and
     modes of the click options used.
@@ -248,7 +280,23 @@ def check_param_annotations(f: click.Command) -> bool:
         @my_pass_username_decorator
         def goodcmd(*, foo: str, username: str):
             ...
+
+    A mapping of types to nice names can be provided as `known_type_names`. For example,
+    this usage will translate `str | bytes` to 'stringish' and `str | bytes | None` to
+    'stringish | None':
+
+    .. code-block:: python
+
+        check_param_annotations(
+            some_command,
+            known_type_names={
+                typing.Union[str, bytes]: "stringish",
+                typing.Union[str, bytes, None]: "stringish | None",
+            }
+        )
     """
+    type_names = _TypeNameMap({} if known_type_names is None else known_type_names)
+
     hints = t.get_type_hints(f.callback)
     errors = []
     for param in f.params:
@@ -263,10 +311,10 @@ def check_param_annotations(f: click.Command) -> bool:
         annotated_param_type = hints[param.name]
 
         if annotated_param_type != expected_type:
-            expected_type_name = KNOWN_TYPE_NAMES.get(expected_type, str(expected_type))
             errors.append(
                 f"parameter '{param.name}' has unexpected parameter type "
-                f"'{annotated_param_type}' rather than '{expected_type_name}'"
+                f"'{type_names.get_type_name(annotated_param_type)}' rather than "
+                f"'{type_names.get_type_name(expected_type)}'"
             )
             continue
 
