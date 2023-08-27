@@ -1,5 +1,8 @@
 # click-type-test
 
+[![PyPI - Version](https://img.shields.io/pypi/v/click-type-test.svg)](https://pypi.org/project/click-type-test)
+[![PyPI - Python Version](https://img.shields.io/pypi/pyversions/click-type-test.svg)](https://pypi.org/project/click-type-test)
+
 -----
 
 **Table of Contents**
