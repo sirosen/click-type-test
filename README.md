@@ -7,6 +7,7 @@
 - [Overview](#overview)
 - [Installation](#installation)
 - [Usage](#usage)
+- [API](#api)
 - [License](#license)
 
 ## Overview
@@ -86,11 +87,40 @@ your CLI.
 
 #### AnnotatedParamType
 
-If you have a custom `ParamType`, extend it like so and it will have
-first-class support in `click-type-test`:
+If you have a custom `ParamType`, extend it to implement the
+`AnnotatedParamType` protocol and it will have first-class support in
+`click-type-test`.
+
+This requires that there be a method, `get_type_annotation`, which takes the
+`click.Parameter` which was used and returns the type which should be expected
+as an annotation.
+
+For example, here's a `CommaDelimitedList` type which implements
+`AnnotatedParamType`:
 
 ```python
-# TODO!
+import click
+
+class CommaDelimitedList(click.ParamType):
+    def get_type_annotation(self, param: click.Parameter) -> type:
+        return list[str]
+
+    def get_metavar(self, param: click.Parameter) -> str:
+        return "TEXT,TEXT,..."
+
+    def convert(
+        self, value: str, param: click.Parameter | None, ctx: click.Context | None
+    ) -> list[str]:
+        value = super().convert(value, param, ctx)
+        return value.split(",") if value else []
+```
+
+You can check that a `ParamType` implements `AnnotatedParamType` with
+a simple `isinstance` check:
+```python
+import click_type_test
+
+isinstance(myparamtype, click_type_test.AnnotatedParamType)
 ```
 
 #### AnnotatedParameter
@@ -98,10 +128,22 @@ first-class support in `click-type-test`:
 If you have a subclass of `Option` or `Argument` which produces specialized
 values, it may be necessary to provide type information from that class.
 To handle this case, just have your parameter class implement the
-`AnnotatedParameter` protocol, like so:
+`AnnotatedParameter` protocol.
 
+This requires a method, `has_explicit_annotation`, and a property
+`type_annotation`.
+`has_explicit_annotation` takes no arguments and returns a bool.
+`type_annotation` returns a `type`.
+
+See
+[`examples/explicitly_annotation_option.py`](https://github.com/sirosen/click-type-test/blob/main/examples/explicitly_annotated_option.py) for an example.
+
+You can check that a `Parameter` implements `AnnotatedParameter` with
+a simple `isinstance` check:
 ```python
-# TODO!
+import click_type_test
+
+isinstance(myparam, click_type_test.AnnotatedParameter)
 ```
 
 ## API
@@ -110,10 +152,10 @@ The following values are the consumable API for `click-type-test`.
 No other values are part of the interface.
 
 - `AnnotatedParamType`: a protocol for `click.ParamType` subclasses which
-  provide explicit type information.
+  provide explicit type information. It is runtime checkable.
 
 - `AnnotatedParameter`: a protocol for `click.Parameter` subclasses which
-  provide explicit type information.
+  provide explicit type information. It is runtime checkable.
 
 - `deduce_type_from_parameter`: a function which takes a `click.Parameter` and
   returns a type. Used internally but useful for unit testing custom classes.
