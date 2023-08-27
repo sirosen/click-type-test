@@ -8,6 +8,7 @@ click-type-test
 from __future__ import annotations
 
 import datetime
+import inspect
 import types
 import typing as t
 import uuid
@@ -90,15 +91,30 @@ def _type_from_param_type(
             )
         ]
     if isinstance(param_type, click.Path):
-        if param_type.type is not None:
-            if isinstance(param_obj.type, type):
-                return param_obj.type
-            else:
-                raise NotImplementedError(
-                    "todo: support the return type of a converter func"
-                )
-        else:
+        if param_type.type is None:
             return str
+        if isinstance(param_type.type, type):
+            return param_type.type
+        elif callable(param_type.type):
+            # NB: `from_callable` defaults to unwrapping any functions wrapped
+            # with functools.wraps and looking at the signature of the wrapped
+            # function. This could be disabled by allowing a user to request
+            # `follow_wrapped=False`, if there is ever user demand
+            return_annotation = inspect.Signature.from_callable(
+                param_type.type
+            ).return_annotation
+            if return_annotation is inspect.Signature.empty:
+                raise TypeError(
+                    "click-type-test encountered a Path where 'path_type' was "
+                    "set, but the return type of the converter function was not "
+                    "annotated."
+                )
+            return return_annotation
+        else:
+            raise TypeError(
+                "click-type-test encountered a Path where 'path_type' was "
+                "set, but it was not a type or callable"
+            )
 
     raise NotImplementedError(f"unsupported parameter type: {param_type}")
 
@@ -145,7 +161,7 @@ def deduce_type_from_parameter(param: click.Parameter) -> type:
     #   '--foo' uses a param type which converts None to a default value
     if isinstance(param, click.Option):
         if _option_defaults_to_none(param):
-            possible_types.add(None.__class__)
+            possible_types.add(None)
 
     # if a parameter has `multiple=True` or `nargs=-1`, then the type which can be
     # deduced from the parameter should be exposed as an any-length tuple
@@ -166,6 +182,13 @@ def deduce_type_from_parameter(param: click.Parameter) -> type:
                 possible_types.add(member_type)
         else:
             possible_types.add(param_type)
+
+    # before returning, convert None -> NoneType
+    try:
+        possible_types.remove(None)
+        possible_types.add(None.__class__)
+    except KeyError:
+        pass
 
     # should be unreachable
     if len(possible_types) == 0:

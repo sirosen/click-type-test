@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Enhance documentation and examples
+- Add support for `click.Path(path_type=...)` as a type or a callable with an
+  annotated return type. Unsupported `path_type` values will raise `TypeError`.
+
 ## 0.0.3
 
 - Remove `ExplicitlyAnnotatedOption` from the library due to issues with
