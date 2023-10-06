@@ -18,6 +18,16 @@ def test_deduce_type_from_parameter_on_nullable_flag():
     assert deduce_type_from_parameter(opt) == (bool | None)
 
 
+def test_deduce_type_from_string_opt():
+    opt = click.Option(["--foo"])
+    assert deduce_type_from_parameter(opt) == (str | None)
+
+
+def test_deduce_type_from_required_string_opt():
+    opt = click.Option(["--foo"], required=True)
+    assert deduce_type_from_parameter(opt) == str
+
+
 def test_deduce_type_from_multiple_string_opt():
     opt = click.Option(["--foo"], multiple=True)
     assert deduce_type_from_parameter(opt) == tuple[str, ...]
@@ -28,9 +38,24 @@ def test_deduce_type_from_int_argument():
     assert deduce_type_from_parameter(arg) == int
 
 
+def test_deduce_type_from_nonrequired_int_argument():
+    arg = click.Argument(["FOO"], type=int, required=False)
+    assert deduce_type_from_parameter(arg) == (int | None)
+
+
 def test_deduce_type_from_nargs_many_argument():
     arg = click.Argument(["FOO"], nargs=-1)
     assert deduce_type_from_parameter(arg) == tuple[str, ...]
+
+
+def test_deduce_type_from_nonrequired_nargs_many_argument():
+    arg = click.Argument(["FOO"], nargs=-1, required=False)
+    assert deduce_type_from_parameter(arg) == tuple[str, ...]
+
+
+def test_deduce_type_from_nonrequired_nargs_fixedint_argument():
+    arg = click.Argument(["FOO"], nargs=3, required=False)
+    assert deduce_type_from_parameter(arg) == (tuple[str, str, str] | None)
 
 
 def test_check_annotations_fails_on_missing_arg():

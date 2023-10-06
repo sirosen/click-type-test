@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Fix handling for required options, non-required arguments, `nargs=-1`, and
+  `nargs=N` for `N>1`
+
 ## 0.0.4
 
 - Enhance documentation and examples

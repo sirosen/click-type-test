@@ -123,10 +123,19 @@ def _is_multi_param(p: click.Parameter) -> bool:
     if isinstance(p, click.Option) and p.multiple:
         return True
 
-    if isinstance(p, click.Argument) and p.nargs == -1:
+    if isinstance(p, click.Argument) and p.nargs != 1:
         return True
 
     return False
+
+
+def _multi_param_length(p: click.Parameter) -> int:
+    if isinstance(p, click.Option):
+        return -1
+    if isinstance(p, click.Argument):
+        return p.nargs
+    # unknown cases, unbounded?
+    return -1
 
 
 def _option_defaults_to_none(o: click.Option) -> bool:
@@ -136,6 +145,27 @@ def _option_defaults_to_none(o: click.Option) -> bool:
 
     # a multiple option defaults to () if default is unset or None
     if o.multiple:
+        return False
+
+    # if required, then the default can't be `None`
+    if o.required:
+        return False
+
+    # fallthrough case: True
+    return True
+
+
+def _argument_defaults_to_none(a: click.Argument) -> bool:
+    # if required (normal case), then it shouldn't be `None`
+    if a.required:
+        return False
+
+    # if `default=1`, then the default can't be `None` even if it's not required
+    if a.default is not None:
+        return False
+
+    # if nargs is -1, then the default is (), like a multiple option
+    if a.nargs == -1:
         return False
 
     # fallthrough case: True
@@ -162,13 +192,24 @@ def deduce_type_from_parameter(param: click.Parameter) -> type:
     if isinstance(param, click.Option):
         if _option_defaults_to_none(param):
             possible_types.add(None)
+    # for arguments, typically we do not set the default to None
+    # *unless* `required=False` was passed, in which case it could be
+    elif isinstance(param, click.Argument):
+        if _argument_defaults_to_none(param):
+            possible_types.add(None)
 
     # if a parameter has `multiple=True` or `nargs=-1`, then the type which can be
     # deduced from the parameter should be exposed as an any-length tuple
     if _is_multi_param(param):
-        param_type = tuple[  # type: ignore[misc, valid-type]
-            _type_from_param_type(param), ...
-        ]
+        num_params = _multi_param_length(param)
+        if num_params == -1:
+            param_type = tuple[  # type: ignore[misc, valid-type]
+                _type_from_param_type(param), ...
+            ]
+        else:
+            param_type = tuple[  # type: ignore[misc]
+                tuple(_type_from_param_type(param) for _ in range(num_params))
+            ]
         possible_types.add(param_type)
     # if not multiple, then the type may need to be unioned with `None`
     # but if the type is, itself, a union, then it will need to be unpacked
