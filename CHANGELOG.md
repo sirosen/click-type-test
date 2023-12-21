@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.0.6
+
 - The type annotation used as the return type of a `callback` on a parameter
   will now be treated as an override which takes precedence over any deduction
   about the parameter type
