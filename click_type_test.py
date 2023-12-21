@@ -290,7 +290,7 @@ class _TypeNameMap:
 
     def _normkey(self, key: type) -> type:
         if isinstance(key, types.UnionType):
-            return t.Union[tuple(t.get_args(key))]  # type: ignore[return-value]
+            return t.Union[tuple(t.get_args(key))]
         return key
 
     def __setitem__(self, key: type, value: str) -> None:
