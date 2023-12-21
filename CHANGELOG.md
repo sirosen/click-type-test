@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+- The type annotation used as the return type of a `callback` on a parameter
+  will now be treated as an override which takes precedence over any deduction
+  about the parameter type
+- The type annotation used as the return type of a custom type's `convert`
+  method will be checked and used as the annotated value for parameter types
+  which do not implement `AnnotatedParamType`
+- The documentation is more explicit about type evaluation logic and order of
+  overrides
+
 ## 0.0.5
 
 - Fix handling for required options, non-required arguments, `nargs=-1`, and

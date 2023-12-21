@@ -58,6 +58,31 @@ _CLICK_STATIC_TYPE_MAP: dict[type[click.ParamType], type] = {
 }
 
 
+def _is_click_module(mod: types.ModuleType) -> bool:
+    modname = mod.__name__
+    return modname == "click" or modname.startswith("click.")
+
+
+def _defined_in_click(obj: object) -> bool:
+    mod = inspect.getmodule(obj)
+    if mod is None:
+        return False
+    return _is_click_module(mod)
+
+
+def _type_of_return_annotation(obj: object) -> type | None:
+    mod = inspect.getmodule(obj)
+    if mod is None:
+        return None
+    if _is_click_module(mod):
+        mod = click
+    annotations = t.get_type_hints(obj, globalns=vars(mod))
+    return_annotation = annotations.get("return")
+    if return_annotation is not None:
+        return t.cast(type, return_annotation)
+    return None
+
+
 def _type_from_param_type(
     param_obj: click.Parameter, *, param_type: click.ParamType | None = None
 ) -> type:
@@ -78,6 +103,13 @@ def _type_from_param_type(
     # custom types
     if isinstance(param_type, AnnotatedParamType):
         return param_type.get_type_annotation(param_obj)
+
+    # a custom type which defines a `convert()` method outside of `click`
+    # note that we check for `convert` itself being inherited
+    if not _defined_in_click(param_type.convert):
+        convert_returns = _type_of_return_annotation(param_type.convert)
+        if convert_returns is not None:
+            return convert_returns
 
     # click types
     if type(param_type) in _CLICK_STATIC_TYPE_MAP:
@@ -179,6 +211,11 @@ def deduce_type_from_parameter(param: click.Parameter) -> type:
     # if there is an explicit annotation, use that
     if isinstance(param, AnnotatedParameter) and param.has_explicit_annotation():
         return param.type_annotation
+
+    if param.callback is not None:
+        callback_returns = _type_of_return_annotation(param.callback)
+        if callback_returns is not None:
+            return callback_returns
 
     possible_types: set[type | None] = set()
 

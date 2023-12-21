@@ -72,6 +72,49 @@ def test_mycommand_annotations():
     check_param_annotations(mycommand)
 ```
 
+### Type Determination Logic
+
+`click-type-test` makes its best effort to determine what type will be passed
+to the command at runtime, based on the available information.
+
+1.  If the parameter implements `AnnotatedParameter` and has an explicit
+    annotation, that value will always be used.
+
+    This makes this value the highest precedence override.
+
+2.  If there is a `callback` function with a return type annotation, the return
+    type of the `callback` will be used.
+    This makes the `callback` return type the second highest precedence value.
+
+3.  After this, `click-type-test` must inspect the parameter type which has been
+    used, any `default` value which has been set, `multiple=True` for options and
+    `nargs=-1` for arguments, and generally try to infer the type correctly.
+
+For parameter type evaluation, users can control the behavior of custom types
+in two significant ways:
+
+- annotate `convert` with a return type annotation (this will be used if
+  available)
+
+- implement `AnnotatedOption` and define a type annotation (this is used as the
+  highest precedence value for a parameter type, so it can be used as an
+  override)
+
+As a simple example, `click-type-test` is able to handle the following comma
+delimited list type definition correctly correctly:
+
+```python
+class CommaDelimitedList(click.ParamType):
+    def get_metavar(self, param: click.Parameter) -> str:
+        return "TEXT,TEXT,..."
+
+    def convert(
+        self, value: str, param: click.Parameter | None, ctx: click.Context | None
+    ) -> list[str]:
+        value = super().convert(value, param, ctx)
+        return value.split(",") if value else []
+```
+
 ### Extending And Adjusting With AnnotatedParamType and AnnotatedOption
 
 The type deductions made by `click-type-test` are not always going to be
@@ -97,26 +140,6 @@ If you have a custom `ParamType`, extend it to implement the
 This requires that there be a method, `get_type_annotation`, which takes the
 `click.Parameter` which was used and returns the type which should be expected
 as an annotation.
-
-For example, here's a `CommaDelimitedList` type which implements
-`AnnotatedParamType`:
-
-```python
-import click
-
-class CommaDelimitedList(click.ParamType):
-    def get_type_annotation(self, param: click.Parameter) -> type:
-        return list[str]
-
-    def get_metavar(self, param: click.Parameter) -> str:
-        return "TEXT,TEXT,..."
-
-    def convert(
-        self, value: str, param: click.Parameter | None, ctx: click.Context | None
-    ) -> list[str]:
-        value = super().convert(value, param, ctx)
-        return value.split(",") if value else []
-```
 
 You can check that a `ParamType` implements `AnnotatedParamType` with
 a simple `isinstance` check:

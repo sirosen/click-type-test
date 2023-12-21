@@ -3,7 +3,7 @@ This example shows an explicitly annotated option type, which allows users to sp
 an override or specific annotation via the `type_annotation` argument.
 
 The benefit of this approach is that it lets users specify an annotation explicitly for
-cases like callbacks, where the deduced annotation would be incorrect.
+cases where the deduced annotation would be incorrect.
 """
 from __future__ import annotations
 
