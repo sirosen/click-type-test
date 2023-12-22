@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.0.7
+
 - Add a parameter, `overrides`, to `check_param_annotations` which can be used
   to skip type deduction and use a hard-coded value instead
 
