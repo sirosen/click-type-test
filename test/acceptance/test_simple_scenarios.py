@@ -21,3 +21,12 @@ def test_simple_failing_usage():
 
     with pytest.raises(BadAnnotationError):
         check_param_annotations(foo)
+
+
+def test_override_usage():
+    @click.command
+    @click.option("--mode", type=click.Choice(["a", "b", "c"]))
+    def foo(mode: str | None) -> None:
+        pass
+
+    check_param_annotations(foo, overrides={"mode": str | None})

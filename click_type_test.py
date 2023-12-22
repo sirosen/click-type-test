@@ -318,7 +318,10 @@ class _TypeNameMap:
 
 
 def check_param_annotations(
-    f: click.Command, *, known_type_names: dict[type, str] | None = None
+    f: click.Command,
+    *,
+    known_type_names: dict[type, str] | None = None,
+    overrides: dict[str, type] | None = None,
 ) -> bool:
     """
     Check that the type annotations on a command's parameters match the types and
@@ -359,9 +362,10 @@ def check_param_annotations(
         def goodcmd(*, foo: str, username: str):
             ...
 
-    A mapping of types to nice names can be provided as `known_type_names`. For example,
-    this usage will translate `str | bytes` to 'stringish' and `str | bytes | None` to
-    'stringish | None':
+    A mapping of types to nice names can be provided as `known_type_names`. This is only
+    used for error message production, but it allows you to give nicer names to complex
+    types. For example, this usage will translate `str | bytes` to 'stringish' and
+    `str | bytes | None` to 'stringish | None' in any error messages:
 
     .. code-block:: python
 
@@ -372,6 +376,17 @@ def check_param_annotations(
                 typing.Union[str, bytes, None]: "stringish | None",
             }
         )
+
+    You may want to override `click-type-test`'s logic for a specific parameter. To do
+    this, use `overrides` to provide a mapping of parameter names to types. For example,
+    this usage treats `foo` as a `str` rather than a `Literal[...]`:
+
+        @click.command
+        @click.argument('FOO', type=click.Choice(_complex_generator()))
+        def mycmd(*, foo: str):
+            ...
+
+        check_param_annotations(mycmd, overrides={"foo": str})
     """
     type_names = _TypeNameMap({} if known_type_names is None else known_type_names)
 
@@ -385,7 +400,10 @@ def check_param_annotations(
             errors.append(f"expected parameter '{param.name}' was not in type hints")
             continue
 
-        expected_type = deduce_type_from_parameter(param)
+        if overrides is not None and param.name in overrides:
+            expected_type = overrides[param.name]
+        else:
+            expected_type = deduce_type_from_parameter(param)
         annotated_param_type = hints[param.name]
 
         if annotated_param_type != expected_type:

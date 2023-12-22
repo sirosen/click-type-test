@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Add a parameter, `overrides`, to `check_param_annotations` which can be used
+  to skip type deduction and use a hard-coded value instead
+
 ## 0.0.6
 
 - The type annotation used as the return type of a `callback` on a parameter
