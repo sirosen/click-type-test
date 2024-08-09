@@ -5,6 +5,7 @@ click-type-test
 - type: add annotations
 - test: check that the annotations match the `click` usage
 """
+
 from __future__ import annotations
 
 import datetime
@@ -20,20 +21,17 @@ import click
 class AnnotatedParamType(t.Protocol):
     # conventionally this protocol describes subclasses of click.ParamType
     # however, the type itself does not enforce this
-    def get_type_annotation(self, param: click.Parameter) -> type:
-        ...
+    def get_type_annotation(self, param: click.Parameter) -> type: ...
 
 
 @t.runtime_checkable
 class AnnotatedParameter(t.Protocol):
     # conventionally this protocol describes subclasses of click.Option
     # however, the type itself does not enforce this
-    def has_explicit_annotation(self) -> bool:
-        ...
+    def has_explicit_annotation(self) -> bool: ...
 
     @property
-    def type_annotation(self) -> type:
-        ...
+    def type_annotation(self) -> type: ...
 
 
 class BadAnnotationError(ValueError):
@@ -44,6 +42,8 @@ class BadAnnotationError(ValueError):
         else:
             super().__init__("\n  " + "\n  ".join(errors))
 
+
+_NoneType = None.__class__
 
 _CLICK_STATIC_TYPE_MAP: dict[type[click.ParamType], type] = {
     click.types.StringParamType: str,
@@ -264,7 +264,7 @@ def deduce_type_from_parameter(param: click.Parameter) -> type:
     # before returning, convert None -> NoneType
     try:
         possible_types.remove(None)
-        possible_types.add(None.__class__)
+        possible_types.add(_NoneType)
     except KeyError:
         pass
 
@@ -310,7 +310,7 @@ class _TypeNameMap:
             return " | ".join(self.get_type_name(x) for x in t.get_args(typ))
 
         if isinstance(typ, type):
-            if typ == (None.__class__):
+            if typ == _NoneType:
                 return "None"
             return typ.__name__
 

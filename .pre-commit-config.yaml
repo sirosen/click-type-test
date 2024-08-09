@@ -1,36 +1,40 @@
 repos:
 - repo: https://github.com/pre-commit/pre-commit-hooks.git
-  rev: v4.4.0
+  rev: v4.6.0
   hooks:
     - id: check-merge-conflict
     - id: trailing-whitespace
 - repo: https://github.com/psf/black
-  rev: 23.7.0
+  rev: 24.8.0
   hooks:
     - id: black
+- repo: https://github.com/sirosen/slyp
+  rev: 0.7.0
+  hooks:
+    - id: slyp
 - repo: https://github.com/PyCQA/flake8
-  rev: 6.1.0
+  rev: 7.1.1
   hooks:
     - id: flake8
       additional_dependencies:
-        - 'flake8-bugbear==23.7.10'
-        - 'flake8-comprehensions==3.14.0'
+        - 'flake8-bugbear==24.4.26'
+        - 'flake8-comprehensions==3.15.0'
         - 'flake8-typing-as-t==0.0.3'
 - repo: https://github.com/PyCQA/isort
-  rev: 5.12.0
+  rev: 5.13.2
   hooks:
     - id: isort
 - repo: https://github.com/asottile/pyupgrade
-  rev: v3.10.1
+  rev: v3.17.0
   hooks:
     - id: pyupgrade
       args: ["--py310-plus"]
 - repo: https://github.com/python-jsonschema/check-jsonschema
-  rev: 0.24.1
+  rev: 0.29.1
   hooks:
     - id: check-dependabot
     - id: check-github-workflows
 - repo: https://github.com/codespell-project/codespell
-  rev: v2.2.5
+  rev: v2.3.0
   hooks:
     - id: codespell
