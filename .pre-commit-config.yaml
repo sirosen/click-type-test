@@ -1,15 +1,15 @@
 repos:
 - repo: https://github.com/pre-commit/pre-commit-hooks.git
-  rev: v4.6.0
+  rev: v5.0.0
   hooks:
     - id: check-merge-conflict
     - id: trailing-whitespace
 - repo: https://github.com/psf/black
-  rev: 24.8.0
+  rev: 24.10.0
   hooks:
     - id: black
 - repo: https://github.com/sirosen/slyp
-  rev: 0.7.0
+  rev: 0.8.1
   hooks:
     - id: slyp
 - repo: https://github.com/PyCQA/flake8
@@ -25,12 +25,12 @@ repos:
   hooks:
     - id: isort
 - repo: https://github.com/asottile/pyupgrade
-  rev: v3.17.0
+  rev: v3.18.0
   hooks:
     - id: pyupgrade
       args: ["--py310-plus"]
 - repo: https://github.com/python-jsonschema/check-jsonschema
-  rev: 0.29.1
+  rev: 0.29.4
   hooks:
     - id: check-dependabot
     - id: check-github-workflows
