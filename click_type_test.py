@@ -63,6 +63,15 @@ def _is_click_module(mod: types.ModuleType) -> bool:
     return modname == "click" or modname.startswith("click.")
 
 
+def _make_tuple_type(*typeargs: type | types.EllipsisType) -> type:
+    if typeargs and typeargs[-1] is ...:
+        if len(typeargs) != 2:
+            raise ValueError(f"Cannot build tuple type with `...`: typeargs={typeargs}")
+        return tuple[typeargs[0], ...]  # type: ignore[valid-type]
+    else:
+        return tuple[typeargs]  # type: ignore[valid-type]
+
+
 def _defined_in_click(obj: object) -> bool:
     mod = inspect.getmodule(obj)
     if mod is None:
@@ -117,11 +126,9 @@ def _type_from_param_type(
     if isinstance(param_type, click.Choice):
         return t.Literal[tuple(param_type.choices)]  # type: ignore[return-value]
     if isinstance(param_type, click.Tuple):
-        return tuple[  # type: ignore[misc, no-any-return]
-            tuple(
-                _type_from_param_type(param_obj, param_type=p) for p in param_type.types
-            )
-        ]
+        return _make_tuple_type(
+            *(_type_from_param_type(param_obj, param_type=p) for p in param_type.types)
+        )
     if isinstance(param_type, click.Path):
         if param_type.type is None:
             return str
@@ -218,6 +225,7 @@ def deduce_type_from_parameter(param: click.Parameter) -> type:
             return callback_returns
 
     possible_types: set[type | None] = set()
+    param_type: type
 
     # only implicitly add NoneType to the types if the default is None
     # some possible cases to consider:
@@ -240,13 +248,11 @@ def deduce_type_from_parameter(param: click.Parameter) -> type:
     if _is_multi_param(param):
         num_params = _multi_param_length(param)
         if num_params == -1:
-            param_type = tuple[  # type: ignore[misc, valid-type]
-                _type_from_param_type(param), ...
-            ]
+            param_type = _make_tuple_type(_type_from_param_type(param), ...)
         else:
-            param_type = tuple[  # type: ignore[misc]
-                tuple(_type_from_param_type(param) for _ in range(num_params))
-            ]
+            param_type = _make_tuple_type(
+                *(_type_from_param_type(param) for _ in range(num_params))
+            )
         possible_types.add(param_type)
     # if not multiple, then the type may need to be unioned with `None`
     # but if the type is, itself, a union, then it will need to be unpacked
