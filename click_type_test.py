@@ -258,10 +258,7 @@ def deduce_type_from_parameter(param: click.Parameter) -> type:
     # but if the type is, itself, a union, then it will need to be unpacked
     else:
         param_type = _type_from_param_type(param)
-        if (  # detect Union[X, Y] and "union type expressions" (X | Y)
-            isinstance(param_type, types.UnionType)
-            or t.get_origin(param_type) == t.Union
-        ):
+        if _is_union(param_type):
             for member_type in t.get_args(param_type):
                 possible_types.add(member_type)
         else:
@@ -312,7 +309,7 @@ class _TypeNameMap:
         if typ in self:
             return self[typ]
 
-        if isinstance(typ, types.UnionType) or t.get_origin(typ) == t.Union:
+        if _is_union(typ):
             return " | ".join(self.get_type_name(x) for x in t.get_args(typ))
 
         if isinstance(typ, type):
@@ -412,7 +409,7 @@ def check_param_annotations(
             expected_type = deduce_type_from_parameter(param)
         annotated_param_type = hints[param.name]
 
-        if annotated_param_type != expected_type:
+        if not _compare_types(annotated_param_type, expected_type):
             errors.append(
                 f"parameter '{param.name}' has unexpected parameter type "
                 f"'{type_names.get_type_name(annotated_param_type)}' rather than "
@@ -424,3 +421,47 @@ def check_param_annotations(
         raise BadAnnotationError(errors)
 
     return True
+
+
+def _compare_types(type1: type, type2: type) -> bool:
+    if type1 == type2:
+        return True
+
+    if _is_tuple(type1) and _is_tuple(type2):
+        args1 = t.get_args(type1)
+        args2 = t.get_args(type2)
+        if len(args1) != len(args2):
+            return False
+        for subtype1, subtype2 in zip(args1, args2):
+            if not _compare_types(subtype1, subtype2):
+                return False
+        return True
+
+    if _is_union(type1) and _is_union(type2):
+        args1 = t.get_args(type1)
+        args2 = t.get_args(type2)
+        if len(args1) != len(args2):
+            return False
+
+        unmatched_rhs_subtypes = set(args2)
+        for subtype1 in args1:
+            for subtype2 in unmatched_rhs_subtypes:
+                if _compare_types(subtype1, subtype2):
+                    unmatched_rhs_subtypes.remove(subtype2)
+                    break
+            else:  # no break, so subtype1 was not found
+                return False
+        # return true/false if we have anything still unmatched
+        return len(unmatched_rhs_subtypes) == 0
+
+    return False
+
+
+def _is_union(ty: type) -> bool:
+    # detect Union[X, Y] and "union type expressions" (X | Y)
+    return isinstance(ty, types.UnionType) or t.get_origin(ty) == t.Union
+
+
+def _is_tuple(ty: type) -> bool:
+    # detect Tuple[X, Y] and tuple[X, Y]
+    return isinstance(ty, tuple) or t.get_origin(ty) in (t.Tuple, tuple)

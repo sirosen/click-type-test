@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Support looser comparisons between Tuple and Union types. `tuple[...]` and
+  `typing.Tuple[...]` should now compare equal, as should Unions in which the
+  order of the union members varies.
+
 ## 1.0.0
 
 - Add support for Python 3.13
