@@ -5,7 +5,7 @@ repos:
     - id: check-merge-conflict
     - id: trailing-whitespace
 - repo: https://github.com/psf/black
-  rev: 24.10.0
+  rev: 25.1.0
   hooks:
     - id: black
 - repo: https://github.com/sirosen/slyp
@@ -21,7 +21,7 @@ repos:
         - 'flake8-comprehensions==3.15.0'
         - 'flake8-typing-as-t==0.0.3'
 - repo: https://github.com/PyCQA/isort
-  rev: 5.13.2
+  rev: 6.0.0
   hooks:
     - id: isort
 - repo: https://github.com/asottile/pyupgrade
@@ -30,11 +30,11 @@ repos:
     - id: pyupgrade
       args: ["--py310-plus"]
 - repo: https://github.com/python-jsonschema/check-jsonschema
-  rev: 0.31.0
+  rev: 0.31.1
   hooks:
     - id: check-dependabot
     - id: check-github-workflows
 - repo: https://github.com/codespell-project/codespell
-  rev: v2.4.0
+  rev: v2.4.1
   hooks:
     - id: codespell
