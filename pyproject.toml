@@ -2,6 +2,12 @@
 requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
 
+[dependency-groups]
+coverage = ["coverage[toml]"]
+test = [{include-group = "coverage"}, "pytest"]
+typing = ["mypy"]
+lint = ["pre-commit"]
+
 [project]
 name = "click-type-test"
 version = "1.1.0"
@@ -20,9 +26,10 @@ classifiers = [
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
   "Programming Language :: Python :: Implementation :: CPython",
 ]
-dependencies = ["click>=8"]
+dependencies = ["click>=8.1.0"]
 
 [project.urls]
 source = "https://github.com/sirosen/click-type-test"
