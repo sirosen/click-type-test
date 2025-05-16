@@ -393,6 +393,11 @@ def check_param_annotations(
     """
     type_names = _TypeNameMap({} if known_type_names is None else known_type_names)
 
+    if not isinstance(f, click.Command):
+        raise TypeError(
+            f"click-type-test cannot check parameters for {f!r} of type {type(f)!r}"
+        )
+
     hints = t.get_type_hints(f.callback)
     errors = []
     for param in f.params:

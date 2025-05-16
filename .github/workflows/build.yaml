@@ -9,6 +9,9 @@ jobs:
       matrix:
         toxenv: [mypy, lint]
         py: ["3.13"]
+        include:
+          - toxenv: "py310-mindeps"
+            py: "3.10"
 
     runs-on: ubuntu-latest
     name: "Run '${{ matrix.toxenv }}' on Python ${{ matrix.py }}"
@@ -37,7 +40,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-        py: ['3.10', '3.11', '3.12', '3.13']
+        py: ['3.10', '3.11', '3.12', '3.13', '3.14']
     name: "Run tests on ${{ matrix.os }}, Python ${{ matrix.py }}"
     runs-on: ${{ matrix.os }}
     steps:
