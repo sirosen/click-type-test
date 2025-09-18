@@ -27,6 +27,11 @@ def test_deduce_type_from_string_opt():
     assert deduce_type_from_parameter(opt) == (str | None)
 
 
+def test_deduce_type_from_string_opt_with_explicit_default_of_none():
+    opt = click.Option(["--foo"], default=None)
+    assert deduce_type_from_parameter(opt) == (str | None)
+
+
 def test_deduce_type_from_required_string_opt():
     opt = click.Option(["--foo"], required=True)
     assert deduce_type_from_parameter(opt) == str

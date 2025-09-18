@@ -58,6 +58,18 @@ _CLICK_STATIC_TYPE_MAP: dict[type[click.ParamType], type] = {
 }
 
 
+# Compatibility: does click define an `UNSET` sentinel?
+# If it does, then the default for an Option may be set to that value,
+# and then the default detection code for options needs to support it.
+_CLICK_UNSET_SENTINELS: list[object] = [None]
+try:
+    from click._utils import UNSET
+
+    _CLICK_UNSET_SENTINELS.append(UNSET)
+except ImportError:
+    pass
+
+
 def _is_click_module(mod: types.ModuleType) -> bool:
     modname = mod.__name__
     return modname == "click" or modname.startswith("click.")
@@ -179,7 +191,7 @@ def _multi_param_length(p: click.Parameter) -> int:
 
 def _option_defaults_to_none(o: click.Option) -> bool:
     # if `default=1`, then the default can't be `None`
-    if o.default is not None:
+    if o.default not in _CLICK_UNSET_SENTINELS:
         return False
 
     # a multiple option defaults to () if default is unset or None
@@ -200,7 +212,7 @@ def _argument_defaults_to_none(a: click.Argument) -> bool:
         return False
 
     # if `default=1`, then the default can't be `None` even if it's not required
-    if a.default is not None:
+    if a.default not in _CLICK_UNSET_SENTINELS:
         return False
 
     # if nargs is -1, then the default is (), like a multiple option

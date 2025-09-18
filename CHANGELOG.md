@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add support for `click>=8.3`
+
 ## 1.2.0
 
 - `click-type-test` now requires `click<8.3`, until support for version 8.3 can
