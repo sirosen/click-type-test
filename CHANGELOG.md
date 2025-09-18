@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- `click-type-test` now requires `click<8.3`, until support for version 8.3 can
+  be added
+
 ## 1.1.0
 
 - Support looser comparisons between Tuple and Union types. `tuple[...]` and
