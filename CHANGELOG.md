@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 1.3.0
+
 - Add support for `click>=8.3`
 
 ## 1.2.0
