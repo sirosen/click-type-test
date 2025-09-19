@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Switch to `to_info_dict()` for parameter inspection, improving compatibility
+  with various `click` versions
+
 ## 1.3.0
 
 - Add support for `click>=8.3`
