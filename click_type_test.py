@@ -552,4 +552,40 @@ def _type_or_literal_is_included(
         if value in collected_literal_values:
             return True
 
+    # if the value is a tuple of Literal-viable types, it may match a Literal tuple in
+    # a multiple use opt
+    if (
+        isinstance(value, tuple)
+        and any(t.get_origin(x) is tuple for x in possible_types)
+        and set(t.get_args(value_type)).issubset({int, str, bool})
+    ):
+        for tuple_type in possible_types:
+            # we're only interested in types of the form tuple[T, ...]
+            if t.get_origin(tuple_type) is not tuple:
+                continue
+            typeargs = t.get_args(tuple_type)
+            if len(typeargs) != 2 or typeargs[1] is not Ellipsis:
+                continue
+
+            multi_use_type = typeargs[0]
+
+            # if it's a literal, check if all of the values are matched
+            if t.get_origin(multi_use_type) is t.Literal and all(
+                member in t.get_args(multi_use_type) for member in value
+            ):
+                return True
+
+            # otherwise, not a literal, check if all of the types used are within the
+            # type (potential union)
+            member_types = {_type_of_value(member) for member in value}
+            if _is_union(multi_use_type):
+                union_members = set(t.get_args(multi_use_type))
+                if member_types.issubset(union_members):
+                    return True
+            else:
+                if len(member_types) == 1 and _compare_types(
+                    member_types.pop(), multi_use_type
+                ):
+                    return True
+
     return False

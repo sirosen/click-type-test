@@ -51,3 +51,14 @@ def test_choice_with_unrecognized_default_is_inferred_as_union():
         pass
 
     check_param_annotations(foo)
+
+
+def test_multiple_choice_with_default_is_inferred_as_ntuple_literal():
+    @click.command
+    @click.option(
+        "--mode", type=click.Choice(["a", "b", "c"]), default=("a",), multiple=True
+    )
+    def foo(mode: tuple[t.Literal["a", "b", "c"], ...]) -> None:
+        pass
+
+    check_param_annotations(foo)
