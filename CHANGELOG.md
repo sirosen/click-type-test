@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 2.0.2
+
 - Improve handling of default tuples for multi use options whose param type is a Choice
 
 ## 2.0.1
