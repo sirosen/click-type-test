@@ -4,6 +4,8 @@
 
 - Switch to `to_info_dict()` for parameter inspection, improving compatibility
   with various `click` versions
+- When a parameter is given a `default`, `click_type_test` will now attempt to take
+  the runtime type of that default into account
 
 ## 1.3.0
 
