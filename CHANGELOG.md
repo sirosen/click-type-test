@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+# 2.0.0
+
 - Switch to `to_info_dict()` for parameter inspection, improving compatibility
   with various `click` versions
 - When a parameter is given a `default`, `click_type_test` will now attempt to take
