@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 2.0.1
+
 - Fix a bug in which the types of defaults were not checked against already
   deduced types, resulting in incorrect union types being built for options with defaults.
 
