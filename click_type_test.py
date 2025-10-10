@@ -13,6 +13,7 @@ import inspect
 import types
 import typing as t
 import uuid
+import warnings
 
 import click
 
@@ -268,6 +269,12 @@ def deduce_type_from_parameter(param: click.Parameter) -> type:
         else:
             possible_types.add(param_type)
 
+    # if the default is specified as a non-None value and has a type which can be
+    # inferred from its value, use that as one of the possible types
+    param_default = param.to_info_dict()["default"]
+    if param_default is not None:
+        possible_types.add(_type_of_value(param_default))
+
     # before returning, convert None -> NoneType
     try:
         possible_types.remove(None)
@@ -474,3 +481,50 @@ def _is_union(ty: type) -> bool:
 def _is_tuple(ty: type) -> bool:
     # detect Tuple[X, Y] and tuple[X, Y]
     return isinstance(ty, tuple) or t.get_origin(ty) in (t.Tuple, tuple)
+
+
+def _type_of_value(value: t.Any, *, _depth: int = 0) -> type:
+    # don't allow infinite recursion, warn and use Any
+    if _depth > 20:
+        warnings.warn(
+            "Depth limit for type deduction on concrete value reached, "
+            "suspected cycle. "
+            "A type of 'Any' will be used.",
+            stacklevel=_depth,
+        )
+        return t.Any
+
+    # given any value, try to infer its type
+    if isinstance(value, tuple):
+        typeargs = tuple(_type_of_value(x, _depth=_depth + 1) for x in value)
+        return tuple[typeargs]  # type: ignore[valid-type]
+    elif isinstance(value, list):
+        element_types = {_type_of_value(x, _depth=_depth + 1) for x in value}
+        if len(element_types) == 1:
+            return list[element_types.pop()]  # type: ignore[misc, return-value]
+        else:
+            return list[  # type: ignore[misc, return-value]
+                t.Union[tuple(element_types)]
+            ]
+    elif isinstance(value, dict):
+        all_key_types, all_value_types = zip(
+            (_type_of_value(k, _depth=_depth + 1), _type_of_value(v, _depth=_depth + 1))
+            for k, v in value.items()
+        )
+        key_types = set(all_key_types[0])
+        value_types = set(all_value_types[0])
+
+        if len(key_types) == 1:
+            key_type: type = key_types.pop()
+        else:
+            key_type = t.Union[tuple(key_types)]  # type: ignore[assignment]
+
+        if len(value_types) == 1:
+            value_type: type = value_types.pop()
+        else:
+            value_type = t.Union[tuple(value_types)]  # type: ignore[assignment]
+
+        return dict[key_type, value_type]  # type: ignore[valid-type]
+    # fallthrough: use the class
+    else:
+        return value.__class__  # type: ignore[no-any-return]
