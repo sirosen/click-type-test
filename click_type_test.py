@@ -9,6 +9,7 @@ click-type-test
 from __future__ import annotations
 
 import datetime
+import enum
 import inspect
 import types
 import typing as t
@@ -273,7 +274,9 @@ def deduce_type_from_parameter(param: click.Parameter) -> type:
     # inferred from its value, use that as one of the possible types
     param_default = param.to_info_dict()["default"]
     if param_default is not None:
-        possible_types.add(_type_of_value(param_default))
+        value_type = _type_of_value(param_default)
+        if not _type_or_literal_is_included(param_default, value_type, possible_types):
+            possible_types.add(value_type)
 
     # before returning, convert None -> NoneType
     try:
@@ -528,3 +531,25 @@ def _type_of_value(value: t.Any, *, _depth: int = 0) -> type:
     # fallthrough: use the class
     else:
         return value.__class__  # type: ignore[no-any-return]
+
+
+def _type_or_literal_is_included(
+    value: t.Any, value_type: type, possible_types: set[type | None]
+) -> bool:
+    if value_type in possible_types:
+        return True
+    # int-bool-ness means this makes more sense to encode than ignore
+    if value_type is bool and int in possible_types:
+        return True
+
+    # check if the value is listed in a literal
+    if isinstance(value, (int, str, bool)) or issubclass(type(value), enum.Enum):
+        collected_literal_values: set[int | str | bool | enum.Enum] = set()
+        for possible in possible_types:
+            if t.get_origin(possible) is t.Literal:
+                collected_literal_values |= set(t.get_args(possible))
+
+        if value in collected_literal_values:
+            return True
+
+    return False

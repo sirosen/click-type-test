@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Fix a bug in which the types of defaults were not checked against already
+  deduced types, resulting in incorrect union types being built for options with defaults.
+
 # 2.0.0
 
 - Switch to `to_info_dict()` for parameter inspection, improving compatibility

@@ -33,3 +33,21 @@ def test_distinct_tuple_types_can_mismatch():
 
     with pytest.raises(BadAnnotationError):
         check_param_annotations(foo)
+
+
+def test_choice_with_default_is_inferred_as_literal():
+    @click.command
+    @click.option("--mode", type=click.Choice(["a", "b", "c"]), default="a")
+    def foo(mode: t.Literal["a", "b", "c"]) -> None:
+        pass
+
+    check_param_annotations(foo)
+
+
+def test_choice_with_unrecognized_default_is_inferred_as_union():
+    @click.command
+    @click.option("--mode", type=click.Choice(["a", "b", "c"]), default="d")
+    def foo(mode: t.Literal["a", "b", "c"] | str) -> None:
+        pass
+
+    check_param_annotations(foo)
