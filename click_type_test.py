@@ -9,12 +9,10 @@ click-type-test
 from __future__ import annotations
 
 import datetime
-import enum
 import inspect
 import types
 import typing as t
 import uuid
-import warnings
 
 import click
 
@@ -270,14 +268,6 @@ def deduce_type_from_parameter(param: click.Parameter) -> type:
         else:
             possible_types.add(param_type)
 
-    # if the default is specified as a non-None value and has a type which can be
-    # inferred from its value, use that as one of the possible types
-    param_default = param.to_info_dict()["default"]
-    if param_default is not None:
-        value_type = _type_of_value(param_default)
-        if not _type_or_literal_is_included(param_default, value_type, possible_types):
-            possible_types.add(value_type)
-
     # before returning, convert None -> NoneType
     try:
         possible_types.remove(None)
@@ -484,108 +474,3 @@ def _is_union(ty: type) -> bool:
 def _is_tuple(ty: type) -> bool:
     # detect Tuple[X, Y] and tuple[X, Y]
     return isinstance(ty, tuple) or t.get_origin(ty) in (t.Tuple, tuple)
-
-
-def _type_of_value(value: t.Any, *, _depth: int = 0) -> type:
-    # don't allow infinite recursion, warn and use Any
-    if _depth > 20:
-        warnings.warn(
-            "Depth limit for type deduction on concrete value reached, "
-            "suspected cycle. "
-            "A type of 'Any' will be used.",
-            stacklevel=_depth,
-        )
-        return t.Any
-
-    # given any value, try to infer its type
-    if isinstance(value, tuple):
-        typeargs = tuple(_type_of_value(x, _depth=_depth + 1) for x in value)
-        return tuple[typeargs]  # type: ignore[valid-type]
-    elif isinstance(value, list):
-        element_types = {_type_of_value(x, _depth=_depth + 1) for x in value}
-        if len(element_types) == 1:
-            return list[element_types.pop()]  # type: ignore[misc, return-value]
-        else:
-            return list[  # type: ignore[misc, return-value]
-                t.Union[tuple(element_types)]
-            ]
-    elif isinstance(value, dict):
-        all_key_types, all_value_types = zip(
-            (_type_of_value(k, _depth=_depth + 1), _type_of_value(v, _depth=_depth + 1))
-            for k, v in value.items()
-        )
-        key_types = set(all_key_types[0])
-        value_types = set(all_value_types[0])
-
-        if len(key_types) == 1:
-            key_type: type = key_types.pop()
-        else:
-            key_type = t.Union[tuple(key_types)]  # type: ignore[assignment]
-
-        if len(value_types) == 1:
-            value_type: type = value_types.pop()
-        else:
-            value_type = t.Union[tuple(value_types)]  # type: ignore[assignment]
-
-        return dict[key_type, value_type]  # type: ignore[valid-type]
-    # fallthrough: use the class
-    else:
-        return value.__class__  # type: ignore[no-any-return]
-
-
-def _type_or_literal_is_included(
-    value: t.Any, value_type: type, possible_types: set[type | None]
-) -> bool:
-    if value_type in possible_types:
-        return True
-    # int-bool-ness means this makes more sense to encode than ignore
-    if value_type is bool and int in possible_types:
-        return True
-
-    # check if the value is listed in a literal
-    if isinstance(value, (int, str, bool)) or issubclass(type(value), enum.Enum):
-        collected_literal_values: set[int | str | bool | enum.Enum] = set()
-        for possible in possible_types:
-            if t.get_origin(possible) is t.Literal:
-                collected_literal_values |= set(t.get_args(possible))
-
-        if value in collected_literal_values:
-            return True
-
-    # if the value is a tuple of Literal-viable types, it may match a Literal tuple in
-    # a multiple use opt
-    if (
-        isinstance(value, tuple)
-        and any(t.get_origin(x) is tuple for x in possible_types)
-        and set(t.get_args(value_type)).issubset({int, str, bool})
-    ):
-        for tuple_type in possible_types:
-            # we're only interested in types of the form tuple[T, ...]
-            if t.get_origin(tuple_type) is not tuple:
-                continue
-            typeargs = t.get_args(tuple_type)
-            if len(typeargs) != 2 or typeargs[1] is not Ellipsis:
-                continue
-
-            multi_use_type = typeargs[0]
-
-            # if it's a literal, check if all of the values are matched
-            if t.get_origin(multi_use_type) is t.Literal and all(
-                member in t.get_args(multi_use_type) for member in value
-            ):
-                return True
-
-            # otherwise, not a literal, check if all of the types used are within the
-            # type (potential union)
-            member_types = {_type_of_value(member) for member in value}
-            if _is_union(multi_use_type):
-                union_members = set(t.get_args(multi_use_type))
-                if member_types.issubset(union_members):
-                    return True
-            else:
-                if len(member_types) == 1 and _compare_types(
-                    member_types.pop(), multi_use_type
-                ):
-                    return True
-
-    return False

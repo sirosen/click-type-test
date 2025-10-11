@@ -2,16 +2,25 @@
 
 ## Unreleased
 
+- Switch to `to_info_dict()` for parameter inspection, improving compatibility
+  with various `click` versions.
+
 ## 2.0.2
+
+*Yanked: the changes in 2.0 related to defaults were found to be incorrect.*
 
 - Improve handling of default tuples for multi use options whose param type is a Choice
 
 ## 2.0.1
 
+*Yanked: the changes in 2.0 related to defaults were found to be incorrect.*
+
 - Fix a bug in which the types of defaults were not checked against already
   deduced types, resulting in incorrect union types being built for options with defaults.
 
 # 2.0.0
+
+*Yanked: the changes in 2.0 related to defaults were found to be incorrect.*
 
 - Switch to `to_info_dict()` for parameter inspection, improving compatibility
   with various `click` versions
