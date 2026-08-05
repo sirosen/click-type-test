@@ -37,10 +37,12 @@ class AnnotatedParameter(t.Protocol):
 class BadAnnotationError(ValueError):
     def __init__(self, errors: list[str]) -> None:
         self.errors = errors
-        if len(errors) == 1:
-            super().__init__(errors[0])
-        else:
-            super().__init__("\n  " + "\n  ".join(errors))
+        super().__init__(errors)
+
+    def __str__(self) -> str:
+        if len(self.errors) == 1:
+            return self.errors[0]
+        return "\n  " + "\n  ".join(self.errors)
 
 
 _NoneType = None.__class__
