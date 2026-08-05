@@ -45,7 +45,7 @@ class BadAnnotationError(ValueError):
 
 _NoneType = None.__class__
 
-_CLICK_STATIC_TYPE_MAP: dict[type[click.ParamType], type] = {
+_CLICK_STATIC_TYPE_MAP: dict[type[click.ParamType[t.Any]], type] = {
     click.types.StringParamType: str,
     click.types.BoolParamType: bool,
     click.types.IntParamType: int,
@@ -93,7 +93,7 @@ def _type_of_return_annotation(obj: object) -> type | None:
 
 
 def _type_from_param_type(
-    param_obj: click.Parameter, *, param_type: click.ParamType | None = None
+    param_obj: click.Parameter, *, param_type: click.ParamType[t.Any] | None = None
 ) -> type:
     """
     Given a Parameter instance, read the 'type' attribute and deduce the type
