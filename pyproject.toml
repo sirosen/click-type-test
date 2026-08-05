@@ -1,6 +1,6 @@
 [build-system]
-requires = ["setuptools"]
-build-backend = "setuptools.build_meta"
+requires = ["flit-core>=3.12.0"]
+build-backend = "flit_core.buildapi"
 
 [dependency-groups]
 coverage = ["coverage[toml]"]
@@ -33,6 +33,14 @@ dependencies = ["click>=8.4.0"]
 
 [project.urls]
 source = "https://github.com/sirosen/click-type-test"
+
+[tool.flit.sdist]
+include = ["CHANGELOG.md", "test/**/*.py", "tox.ini", ".flake8", "justfile"]
+exclude = ["examples/*"]
+
+
+[tool.check-sdist]
+git-only = ["RELEASING.md", ".gitignore", "docs/*"]
 
 
 [tool.coverage.run]
