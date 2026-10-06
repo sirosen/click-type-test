@@ -8,15 +8,15 @@ repos:
     - id: check-merge-conflict
     - id: trailing-whitespace
 - repo: https://github.com/psf/black-pre-commit-mirror
-  rev: 26.5.1
+  rev: 26.10.0
   hooks:
     - id: black
 - repo: https://github.com/sirosen/slyp
-  rev: 0.9.0
+  rev: 0.10.3
   hooks:
     - id: slyp
 - repo: https://github.com/PyCQA/flake8
-  rev: 7.3.0
+  rev: 7.4.1
   hooks:
     - id: flake8
       additional_dependencies:
@@ -24,7 +24,7 @@ repos:
         - 'flake8-comprehensions==3.17.0'
         - 'flake8-typing-as-t==1.1.0'
 - repo: https://github.com/PyCQA/isort
-  rev: 9.0.0b1
+  rev: 9.0.2
   hooks:
     - id: isort
 - repo: https://github.com/asottile/pyupgrade
@@ -33,7 +33,7 @@ repos:
     - id: pyupgrade
       args: ["--py310-plus"]
 - repo: https://github.com/python-jsonschema/check-jsonschema
-  rev: 0.37.4
+  rev: 0.38.2
   hooks:
     - id: check-dependabot
     - id: check-github-workflows
